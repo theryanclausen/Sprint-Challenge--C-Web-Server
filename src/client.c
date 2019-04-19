@@ -32,8 +32,23 @@ urlinfo_t *parse_url(char *url)
   char *hostname = strdup(url);
   char *port = "80";
   char *path = "";
+  char *unsecure = "http://";
+  char *secure = "https://";
 
+  
   urlinfo_t *urlinfo = malloc(sizeof(urlinfo_t));
+
+  if(strstr(hostname, unsecure))
+  {
+    hostname = hostname + 7;
+  }
+
+  if(strstr(hostname, secure))
+  {
+    hostname = hostname + 8;
+  }
+
+  
 
   /*
     We can parse the input URL by doing the following:
@@ -96,6 +111,14 @@ int send_request(int fd, char *hostname, char *port, char *path)
   return rv;
 }
 
+void destroy_url(urlinfo_t *url)
+{
+  free(url->hostname);
+  free(url->path);
+  free(url->port);
+  free(url);
+}
+
 int main(int argc, char *argv[])
 {
   int sockfd, numbytes;
@@ -124,6 +147,7 @@ int main(int argc, char *argv[])
     printf("%s\n", buf);
   }
   //5. Clean up any allocated memory and open file descriptors.
+  destroy_url(url);
 
   return 0;
 }
