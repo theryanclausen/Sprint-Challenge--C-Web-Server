@@ -46,12 +46,13 @@ urlinfo_t *parse_url(char *url)
     6. Overwrite the colon with a '\0' so that we are just left with the hostname.
   */
   path = strchr(hostname, '/');
-  hostname[*path] = '\0';
+  *path = '\0';
   path++;
-
-  port = strchr(path, ':');
-  path[*port] = '\0';
-  path++;
+  
+  port = strchr(hostname, ':');
+  *port = '\0';
+  port++;
+  printf("%s \n%s \n%s \n", hostname, path, port);
 
   urlinfo->hostname = strdup(hostname);
   urlinfo->port = strdup(port);
@@ -77,7 +78,7 @@ int send_request(int fd, char *hostname, char *port, char *path)
   int rv;
 
   int request_length = snprintf(request, max_request_size, 
-    "GET /%s HTTP/1.1\nHost:%s:%s\nConnection: close", 
+    "GET /%s HTTP/1.1\nHost:%s:%s\nConnection: close\n\n", 
     path, hostname, port);
 
   rv = send(fd, request, request_length, 0);
@@ -111,7 +112,7 @@ int main(int argc, char *argv[])
     sockfd = get_socket(url->hostname, url->port);
     //3. Call `send_request` to construct the request and send it
 
-    send_request(sockfd, url->hostname,url->port, url->path);
+    numbytes = send_request(sockfd, url->hostname,url->port, url->path);
     //4. Call `recv` in a loop until there is no more data to receive from the server. Print the received response to stdout.
     
     recv(sockfd, buf, BUFSIZE, 0);
