@@ -30,8 +30,8 @@ urlinfo_t *parse_url(char *url)
 {
   // copy the input URL so as not to mutate the original
   char *hostname = strdup(url);
-  char *port;
-  char *path;
+  char *port = "80";
+  char *path = "";
 
   urlinfo_t *urlinfo = malloc(sizeof(urlinfo_t));
 
@@ -45,14 +45,19 @@ urlinfo_t *parse_url(char *url)
     5. Set the port pointer to 1 character after the spot returned by strchr.
     6. Overwrite the colon with a '\0' so that we are just left with the hostname.
   */
-  path = strchr(hostname, '/');
-  *path = '\0';
-  path++;
-  
-  port = strchr(hostname, ':');
-  *port = '\0';
-  port++;
-  printf("%s \n%s \n%s \n", hostname, path, port);
+  if (strchr(hostname, '/'))
+  {
+    path = strchr(hostname, '/');
+    *path = '\0';
+    path++;
+  }
+  if (strchr(hostname, ':'))
+  {
+    port = strchr(hostname, ':');
+    *port = '\0';
+    port++;
+  }
+  //printf("%s \n%s \n%s \n", hostname, path, port);
 
   urlinfo->hostname = strdup(hostname);
   urlinfo->port = strdup(port);
@@ -77,18 +82,18 @@ int send_request(int fd, char *hostname, char *port, char *path)
   char request[max_request_size];
   int rv;
 
-  int request_length = snprintf(request, max_request_size, 
-    "GET /%s HTTP/1.1\nHost:%s:%s\nConnection: close\n\n", 
-    path, hostname, port);
+  int request_length = snprintf(request, max_request_size,
+                                "GET /%s HTTP/1.1\nHost:%s:%s\nConnection: close\n\n",
+                                path, hostname, port);
 
   rv = send(fd, request, request_length, 0);
 
-    if (rv < 0)
-    {
-        perror("send");
-    }
+  if (rv < 0)
+  {
+    perror("send");
+  }
 
-    return rv;
+  return rv;
 }
 
 int main(int argc, char *argv[])
@@ -102,22 +107,23 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  
-    //1. Parse the input URL
+  //1. Parse the input URL
 
-    urlinfo_t *url = parse_url(argv[1]);
+  urlinfo_t *url = parse_url(argv[1]);
 
-    //2. Initialize a socket by calling the `get_socket` function from lib.c
+  //2. Initialize a socket by calling the `get_socket` function from lib.c
 
-    sockfd = get_socket(url->hostname, url->port);
-    //3. Call `send_request` to construct the request and send it
+  sockfd = get_socket(url->hostname, url->port);
+  //3. Call `send_request` to construct the request and send it
 
-    numbytes = send_request(sockfd, url->hostname,url->port, url->path);
-    //4. Call `recv` in a loop until there is no more data to receive from the server. Print the received response to stdout.
-    
-    recv(sockfd, buf, BUFSIZE, 0);
-    //5. Clean up any allocated memory and open file descriptors.
+  numbytes = send_request(sockfd, url->hostname, url->port, url->path);
+  //4. Call `recv` in a loop until there is no more data to receive from the server. Print the received response to stdout.
 
+  while (recv(sockfd, buf, BUFSIZE, 0) > 0)
+  {
+    printf("%s\n", buf);
+  }
+  //5. Clean up any allocated memory and open file descriptors.
 
   return 0;
 }
